@@ -1,0 +1,7 @@
+node_modules/
+data/
+server.js
+server.test.js
+package.json
+package-lock.json
+README.md
