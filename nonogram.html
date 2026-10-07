@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>숫자의 정원 | 노노그램</title>
+	<link rel="stylesheet" href="reset.css">
+	<link rel="stylesheet" href="layout.css">
+	<link rel="stylesheet" href="main.css">
+	<link rel="stylesheet" href="nonogram.css">
+</head>
+<body>
+	<main class="page">
+		<header class="topbar">
+			<div class="brand">
+				<div class="brand-mark" aria-hidden="true">▦</div>
+				<div><p class="eyebrow">A QUIET MOMENT</p><h1>숫자의 정원</h1></div>
+			</div>
+			<div class="top-actions">
+				<a class="outline-button" href="index.html">9 스도쿠</a>
+				<button class="outline-button" id="newGame" type="button">↻ 새 퍼즐</button>
+				<button class="icon-button" id="checkGame" type="button">✓ 확인하기</button>
+			</div>
+		</header>
+
+		<div class="layout">
+			<section class="game-panel" aria-label="노노그램 게임">
+				<div class="game-head">
+					<div><h2>오늘의 노노그램</h2><p>숫자 힌트를 따라 숨은 그림을 완성하세요.</p></div>
+					<label class="difficulty">난이도
+						<select id="difficulty">
+							<option value="easy">느긋하게 · 8×8</option>
+							<option value="medium" selected>알맞게 · 10×10</option>
+							<option value="hard">깊게 · 12×12</option>
+						</select>
+					</label>
+				</div>
+				<div class="nonogram-board-wrap">
+					<div class="nonogram-grid" id="board" role="grid" aria-label="노노그램 퍼즐"></div>
+				</div>
+				<div class="status-row">
+					<div class="stats">
+						<div class="stat"><span class="stat-label">시간</span><span class="stat-value" id="timer">00:00</span></div>
+						<div class="stat"><span class="stat-label">찾은 칸</span><span class="stat-value" id="progress">0 / 0</span></div>
+					</div>
+					<div class="message" id="message" aria-live="polite">숫자 힌트만큼 이어진 칸을 찾아보세요.</div>
+				</div>
+			</section>
+
+			<aside class="side">
+				<section class="side-card">
+					<h3>칸 표시</h3>
+					<div class="tool-row nonogram-tools" role="group" aria-label="칸 표시 도구">
+						<button class="tool active" type="button" data-mode="fill" aria-pressed="true">■ 채우기</button>
+						<button class="tool" type="button" data-mode="cross" aria-pressed="false">× X 표시</button>
+						<button class="tool" type="button" data-mode="erase" aria-pressed="false">⌫ 지우개</button>
+					</div>
+					<p class="tool-help">칸을 누르거나 드래그해 표시하세요. 오른쪽 클릭은 X 표시입니다.</p>
+				</section>
+				<section class="side-card">
+					<h3>노노그램 하는 법</h3>
+					<div class="tip"><span class="tip-icon">i</span><span>숫자는 해당 줄에서 연속으로 채울 칸의 개수예요. 숫자 사이에는 반드시 빈칸이 하나 이상 있어요.</span></div>
+					<div class="tip nonogram-tip"><span class="tip-icon">✓</span><span>행과 열의 힌트가 모두 맞으면 그림이 완성돼요. 빈칸 표시는 선택 사항입니다.</span></div>
+				</section>
+				<section class="side-card ranking-card" aria-labelledby="rankingTitle">
+					<h3 id="rankingTitle">순위 기록</h3>
+					<p class="ranking-level" id="rankingLevel"></p>
+					<ol class="ranking-list" id="rankingList" aria-live="polite"></ol>
+					<p class="ranking-status" id="rankingStatus" aria-live="polite"></p>
+					<p class="ranking-note">완성 시간 기준 · 이 브라우저에 저장됩니다.</p>
+				</section>
+			</aside>
+		</div>
+	</main>
+	<dialog class="record-dialog" id="recordDialog" aria-labelledby="recordTitle">
+		<form id="recordForm">
+			<h2 id="recordTitle">그림 완성!</h2>
+			<p>순위표에 표시할 이름을 입력해주세요.</p>
+			<label for="recordName">이름</label>
+			<input id="recordName" name="name" type="text" maxlength="20" autocomplete="nickname" required>
+			<div class="record-actions">
+				<button class="outline-button" id="skipRecord" type="button">이번에는 건너뛰기</button>
+				<button class="icon-button" type="submit">순위에 기록</button>
+			</div>
+		</form>
+	</dialog>
+	<script src="nonogram.js" defer></script>
+</body>
+</html>

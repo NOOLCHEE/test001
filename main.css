@@ -50,6 +50,10 @@ h1 {
 	transform: translateY(-1px);
 }
 
+.top-actions a {
+	text-decoration: none;
+}
+
 .game-panel {
 	padding: 25px;
 	background: rgba(255, 253, 248, .84);

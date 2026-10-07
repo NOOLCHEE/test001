@@ -147,7 +147,7 @@
 		width: 100%;
 	}
 
-	.top-actions button {
+	.top-actions > * {
 		flex: 1;
 	}
 
