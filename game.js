@@ -1,0 +1,377 @@
+const boardElement = document.getElementById('board');
+const padElement = document.getElementById('numberPad');
+const messageElement = document.getElementById('message');
+const timerElement = document.getElementById('timer');
+const mistakesElement = document.getElementById('mistakes');
+const difficultyElement = document.getElementById('difficulty');
+const rankingListElement = document.getElementById('rankingList');
+const rankingLevelElement = document.getElementById('rankingLevel');
+const rankingStatusElement = document.getElementById('rankingStatus');
+const recordDialog = document.getElementById('recordDialog');
+const recordForm = document.getElementById('recordForm');
+const recordNameElement = document.getElementById('recordName');
+const playerNameStorageKey = 'sudokuPlayerName';
+const difficultyNames = { easy: '느긋하게', medium: '알맞게', hard: '깊게' };
+const size = 9;
+let solution = [];
+let puzzle = [];
+let entries = [];
+let notes = [];
+let rankingRecords = [];
+let playerName = '';
+let selected = null;
+let mistakes = 0;
+let hints = 3;
+let seconds = 0;
+let timerId = null;
+let noteMode = false;
+let gameComplete = false;
+let gameOver = false;
+let awaitingRecord = false;
+
+function shuffled(values) {
+	const result = [...values];
+	for (let index = result.length - 1; index > 0; index--) {
+		const swapIndex = Math.floor(Math.random() * (index + 1));
+		[result[index], result[swapIndex]] = [result[swapIndex], result[index]];
+	}
+	return result;
+}
+
+function pattern(row, column) {
+	return (row * 3 + Math.floor(row / 3) + column) % size;
+}
+
+function makeSolution() {
+	const rows = shuffled([0, 1, 2]).flatMap(group => shuffled([0, 1, 2]).map(row => group * 3 + row));
+	const columns = shuffled([0, 1, 2]).flatMap(group => shuffled([0, 1, 2]).map(column => group * 3 + column));
+	const numbers = shuffled([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+	return rows.map(row => columns.map(column => numbers[pattern(row, column)]));
+}
+
+function makePuzzle(level) {
+	const blanks = { easy: 39, medium: 48, hard: 55 }[level];
+	const result = solution.map(row => [...row]);
+	const clues = size * size - blanks;
+	const cluesPerBox = Math.floor(clues / 9);
+	const extraClueBoxes = new Set(shuffled(Array.from({ length: 9 }, (_, box) => box)).slice(0, clues % 9));
+	for (let box = 0; box < 9; box++) {
+		const boxRow = Math.floor(box / 3) * 3;
+		const boxColumn = (box % 3) * 3;
+		const boxClues = cluesPerBox + Number(extraClueBoxes.has(box));
+		const cells = shuffled(Array.from({ length: 9 }, (_, index) => index)).slice(boxClues);
+		cells.forEach(index => {
+			result[boxRow + Math.floor(index / 3)][boxColumn + index % 3] = 0;
+		});
+	}
+	return result;
+}
+
+function startGame() {
+	document.documentElement.dataset.difficulty = difficultyElement.value;
+	solution = makeSolution();
+	puzzle = makePuzzle(difficultyElement.value);
+	entries = puzzle.map(row => [...row]);
+	notes = Array.from({ length: 81 }, () => new Set());
+	selected = null;
+	mistakes = 0;
+	hints = 3;
+	seconds = 0;
+	noteMode = false;
+	gameComplete = false;
+	gameOver = false;
+	document.getElementById('noteMode').classList.remove('active');
+	clearInterval(timerId);
+	timerId = null;
+	setMessage('칸을 선택하고 숫자를 눌러보세요.');
+	render();
+	renderLeaderboard();
+}
+
+function startTimer() {
+	if (timerId !== null) return;
+	timerId = setInterval(() => {
+		seconds++;
+		renderTimer();
+	}, 1000);
+}
+
+function renderTimer() {
+	timerElement.textContent = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+}
+
+function setMessage(text, type = '') {
+	messageElement.textContent = text;
+	messageElement.className = `message ${type}`;
+}
+
+function formatDuration(duration) {
+	return `${String(Math.floor(duration / 60)).padStart(2, '0')}:${String(duration % 60).padStart(2, '0')}`;
+}
+
+function renderLeaderboard() {
+	const level = difficultyElement.value;
+	rankingLevelElement.textContent = difficultyNames[level];
+	rankingListElement.replaceChildren();
+	const records = rankingRecords
+		.filter(record => record.difficulty === level)
+		.sort((first, second) => first.seconds - second.seconds || first.date.localeCompare(second.date))
+		.slice(0, 10);
+	if (records.length === 0) {
+		const emptyMessage = document.createElement('li');
+		emptyMessage.className = 'ranking-empty';
+		emptyMessage.textContent = '아직 기록이 없어요. 첫 기록을 남겨보세요!';
+		rankingListElement.append(emptyMessage);
+		return;
+	}
+	records.forEach((record, index) => {
+		const item = document.createElement('li');
+		item.className = 'ranking-item';
+		const rank = document.createElement('span');
+		rank.className = 'ranking-rank';
+		rank.textContent = `${index + 1}.`;
+		const name = document.createElement('span');
+		name.className = 'ranking-name';
+		name.textContent = record.name;
+		const score = document.createElement('span');
+		score.className = 'ranking-score';
+		score.textContent = formatDuration(record.seconds);
+		item.append(rank, name, score);
+		rankingListElement.append(item);
+	});
+}
+
+async function loadRanking() {
+	try {
+		const response = await fetch('/api/leaderboard');
+		if (!response.ok) throw new Error(`순위 조회 요청이 실패했습니다 (${response.status}).`);
+		const data = await response.json();
+		if (!data || !Array.isArray(data.records)) throw new Error('서버에서 받은 순위 데이터 형식이 올바르지 않습니다.');
+		rankingRecords = data.records;
+		renderLeaderboard();
+		rankingStatusElement.textContent = '';
+	} catch (error) {
+		console.error('순위 기록을 불러오지 못했습니다.', error);
+		rankingStatusElement.textContent = '서버에서 순위를 불러오지 못했어요. 서버 연결을 확인해주세요.';
+	}
+}
+
+async function saveRecord(name) {
+	try {
+		const response = await fetch('/api/leaderboard', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ name, seconds, difficulty: difficultyElement.value })
+		});
+		if (!response.ok) throw new Error(`순위 저장 요청이 실패했습니다 (${response.status}).`);
+		const data = await response.json();
+		if (!Array.isArray(data.records) || !Number.isInteger(data.rank)) {
+			throw new Error('서버에서 받은 저장 결과 형식이 올바르지 않습니다.');
+		}
+		rankingRecords = data.records;
+		renderLeaderboard();
+		rankingStatusElement.textContent = '';
+		try {
+			localStorage.setItem(playerNameStorageKey, name);
+			playerName = name;
+		} catch (error) {
+			console.error('이 브라우저에 이름을 기억하지 못했습니다.', error);
+			rankingStatusElement.textContent = '기록은 저장했지만 이 브라우저에 이름을 기억하지 못했어요.';
+		}
+		return data.rank;
+	} catch (error) {
+		console.error('순위 기록을 저장하지 못했습니다.', error);
+		rankingStatusElement.textContent = '순위를 서버에 저장하지 못했어요. 연결을 확인하고 다시 시도해주세요.';
+		setMessage('완성했지만 순위를 서버에 저장하지 못했어요.', 'alert');
+		return false;
+	}
+}
+
+async function recordCompletion() {
+	if (gameComplete || gameOver) return;
+	gameComplete = true;
+	clearInterval(timerId);
+	setMessage(`완성했어요! ${timerElement.textContent} 만에 정원을 채웠습니다.`, 'success');
+	if (playerName) {
+		const rank = await saveRecord(playerName);
+		if (rank > 10) setMessage('완성했어요! 상위 10위 기록에는 들지 못했어요.', 'success');
+		else if (rank !== false) setMessage(`완성 기록을 ${rank}위에 저장했어요! ${timerElement.textContent}`, 'success');
+		return;
+	}
+	awaitingRecord = true;
+	recordNameElement.value = '';
+	recordDialog.showModal();
+	recordNameElement.focus();
+}
+
+function render() {
+	boardElement.innerHTML = '';
+	const selectedValue = selected === null ? 0 : entries[Math.floor(selected / 9)][selected % 9];
+	for (let index = 0; index < 81; index++) {
+		const row = Math.floor(index / 9);
+		const column = index % 9;
+		const cell = document.createElement('button');
+		const value = entries[row][column];
+		cell.className = 'cell';
+		cell.type = 'button';
+		cell.setAttribute('role', 'gridcell');
+		cell.dataset.index = index;
+		cell.setAttribute('aria-label', `${row + 1}행 ${column + 1}열 ${value || '빈 칸'}`);
+		if (puzzle[row][column]) cell.classList.add('given');
+		if (selected === index) cell.classList.add('selected');
+		if (selected !== null && (row === Math.floor(selected / 9) || column === selected % 9 || (Math.floor(row / 3) === Math.floor(Math.floor(selected / 9) / 3) && Math.floor(column / 3) === Math.floor((selected % 9) / 3)))) cell.classList.add('related');
+		if (selectedValue && value === selectedValue) cell.classList.add('same-number');
+		if (value && puzzle[row][column] === 0 && value !== solution[row][column]) cell.classList.add('error');
+		if (value) {
+			cell.append(value);
+		} else if (notes[index].size) {
+			const noteBox = document.createElement('span');
+			noteBox.className = 'notes';
+			for (let number = 1; number <= 9; number++) {
+				const note = document.createElement('span');
+				note.textContent = notes[index].has(number) ? number : '';
+				if (notes[index].has(number)) note.className = 'active';
+				noteBox.append(note);
+			}
+			cell.append(noteBox);
+		}
+		cell.addEventListener('click', () => {
+			selected = index;
+			render();
+		});
+		boardElement.append(cell);
+	}
+	mistakesElement.textContent = `${mistakes} / 3`;
+	document.getElementById('hint').textContent = `힌트 하나 받기 · ${hints}회`;
+	renderTimer();
+}
+
+function inputNumber(number) {
+	if (gameComplete || gameOver) return;
+	if (selected === null) {
+		setMessage('먼저 빈 칸을 선택해주세요.', 'alert');
+		return;
+	}
+	const row = Math.floor(selected / 9);
+	const column = selected % 9;
+	if (puzzle[row][column]) {
+		setMessage('처음부터 있던 숫자는 바꿀 수 없어요.', 'alert');
+		return;
+	}
+	if (noteMode) {
+		notes[selected].has(number) ? notes[selected].delete(number) : notes[selected].add(number);
+		render();
+		return;
+	}
+	startTimer();
+	entries[row][column] = number;
+	notes[selected].clear();
+	if (number !== solution[row][column]) {
+		mistakes++;
+		setMessage('조금 다르게 놓였어요. 다시 생각해볼까요?', 'alert');
+	} else {
+		setMessage('좋아요. 다음 빈 칸을 찾아보세요.');
+	}
+	render();
+	if (mistakes >= 3) {
+		gameOver = true;
+		setMessage('실수가 세 번 쌓였어요. 새 퍼즐로 다시 시작해보세요.', 'alert');
+		clearInterval(timerId);
+	}
+	if (!gameOver && entries.every((line, rowIndex) => line.every((value, columnIndex) => value === solution[rowIndex][columnIndex]))) {
+		recordCompletion();
+	}
+}
+
+function erase() {
+	if (gameComplete || gameOver) return;
+	if (selected === null) return;
+	const row = Math.floor(selected / 9);
+	const column = selected % 9;
+	if (!puzzle[row][column]) {
+		entries[row][column] = 0;
+		notes[selected].clear();
+		render();
+		setMessage('빈 칸으로 되돌렸어요.');
+	}
+}
+
+document.getElementById('newGame').addEventListener('click', startGame);
+document.getElementById('checkGame').addEventListener('click', () => {
+	const wrong = entries.flat().filter((value, index) => value && value !== solution[Math.floor(index / 9)][index % 9]).length;
+	setMessage(wrong ? `아직 ${wrong}개의 숫자를 다시 살펴보세요.` : '지금까지의 숫자는 모두 맞아요.', wrong ? 'alert' : 'success');
+});
+document.getElementById('erase').addEventListener('click', erase);
+document.getElementById('noteMode').addEventListener('click', event => {
+	if (gameComplete || gameOver) return;
+	noteMode = !noteMode;
+	event.currentTarget.classList.toggle('active', noteMode);
+	setMessage(noteMode ? '메모 모드예요. 후보 숫자를 표시하세요.' : '입력 모드로 돌아왔어요.');
+});
+document.getElementById('hint').addEventListener('click', () => {
+	if (gameComplete || gameOver) return;
+	if (hints <= 0 || selected === null) {
+		setMessage(hints <= 0 ? '힌트를 모두 사용했어요.' : '힌트를 받을 빈 칸을 먼저 선택해주세요.', 'alert');
+		return;
+	}
+	const row = Math.floor(selected / 9);
+	const column = selected % 9;
+	if (puzzle[row][column]) {
+		setMessage('빈 칸을 선택하면 힌트를 드릴게요.', 'alert');
+		return;
+	}
+	startTimer();
+	entries[row][column] = solution[row][column];
+	notes[selected].clear();
+	hints--;
+	render();
+	if (entries.every((line, rowIndex) => line.every((value, columnIndex) => value === solution[rowIndex][columnIndex]))) {
+		recordCompletion();
+	} else {
+		setMessage('정답 하나를 살짝 밝혀두었어요.', 'success');
+	}
+});
+difficultyElement.addEventListener('change', startGame);
+recordForm.addEventListener('submit', async event => {
+	event.preventDefault();
+	const name = recordNameElement.value.trim();
+	if (!name) {
+		recordNameElement.focus();
+		return;
+	}
+	const rank = await saveRecord(name);
+	if (rank !== false) {
+		awaitingRecord = false;
+		recordDialog.close();
+		setMessage(rank > 10 ? '완성했어요! 상위 10위 기록에는 들지 못했어요.' : `완성 기록을 ${rank}위에 저장했어요! ${timerElement.textContent}`, 'success');
+	}
+});
+document.getElementById('skipRecord').addEventListener('click', () => recordDialog.close());
+recordDialog.addEventListener('close', () => {
+	if (!awaitingRecord) return;
+	awaitingRecord = false;
+	setMessage('이번 완성은 순위표에 기록하지 않았어요.', 'alert');
+});
+document.addEventListener('keydown', event => {
+	if (/^[1-9]$/.test(event.key)) inputNumber(Number(event.key));
+	if (event.key === 'Backspace' || event.key === 'Delete') erase();
+});
+
+for (let number = 1; number <= 9; number++) {
+	const button = document.createElement('button');
+	button.className = 'number';
+	button.type = 'button';
+	button.textContent = number;
+	button.setAttribute('aria-label', `${number} 입력`);
+	button.addEventListener('click', () => inputNumber(number));
+	padElement.append(button);
+}
+
+try {
+	playerName = localStorage.getItem(playerNameStorageKey)?.slice(0, 20) || '';
+} catch (error) {
+	console.error('저장된 이름을 불러오지 못했습니다.', error);
+	rankingStatusElement.textContent = '이 브라우저에서 저장된 이름을 불러오지 못했어요.';
+}
+loadRanking();
+startGame();
