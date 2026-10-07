@@ -11,6 +11,7 @@ const recordDialog = document.getElementById('recordDialog');
 const recordForm = document.getElementById('recordForm');
 const recordNameElement = document.getElementById('recordName');
 const playerNameStorageKey = 'sudokuPlayerName';
+const rankingStorageKey = 'sudokuLeaderboard';
 const difficultyNames = { easy: '느긋하게', medium: '알맞게', hard: '깊게' };
 const size = 9;
 let solution = [];
@@ -141,59 +142,69 @@ function renderLeaderboard() {
 	});
 }
 
-async function loadRanking() {
+function loadRanking() {
 	try {
-		const response = await fetch('/api/leaderboard');
-		if (!response.ok) throw new Error(`순위 조회 요청이 실패했습니다 (${response.status}).`);
-		const data = await response.json();
-		if (!data || !Array.isArray(data.records)) throw new Error('서버에서 받은 순위 데이터 형식이 올바르지 않습니다.');
-		rankingRecords = data.records;
+		const storedRecords = JSON.parse(localStorage.getItem(rankingStorageKey) || '[]');
+		if (!Array.isArray(storedRecords)) throw new Error('저장된 순위 데이터 형식이 올바르지 않습니다.');
+		rankingRecords = storedRecords.filter(record =>
+			record &&
+			typeof record.name === 'string' &&
+			Number.isInteger(record.seconds) &&
+			record.seconds >= 0 &&
+			difficultyNames[record.difficulty] &&
+			typeof record.date === 'string'
+		);
 		renderLeaderboard();
 		rankingStatusElement.textContent = '';
 	} catch (error) {
-		console.error('순위 기록을 불러오지 못했습니다.', error);
-		rankingStatusElement.textContent = '서버에서 순위를 불러오지 못했어요. 서버 연결을 확인해주세요.';
+		console.error('이 브라우저에서 순위 기록을 불러오지 못했습니다.', error);
+		rankingStatusElement.textContent = '이 브라우저에서 순위를 불러오지 못했어요.';
 	}
 }
 
-async function saveRecord(name) {
+function saveRecord(name) {
+	const record = {
+		name,
+		seconds,
+		difficulty: difficultyElement.value,
+		date: new Date().toISOString()
+	};
+	const levelRecords = [...rankingRecords.filter(item => item.difficulty === record.difficulty), record]
+		.sort((first, second) => first.seconds - second.seconds || first.date.localeCompare(second.date));
+	const rank = levelRecords.indexOf(record) + 1;
+	const records = [
+		...rankingRecords.filter(item => item.difficulty !== record.difficulty),
+		...levelRecords.slice(0, 10)
+	];
+
 	try {
-		const response = await fetch('/api/leaderboard', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ name, seconds, difficulty: difficultyElement.value })
-		});
-		if (!response.ok) throw new Error(`순위 저장 요청이 실패했습니다 (${response.status}).`);
-		const data = await response.json();
-		if (!Array.isArray(data.records) || !Number.isInteger(data.rank)) {
-			throw new Error('서버에서 받은 저장 결과 형식이 올바르지 않습니다.');
-		}
-		rankingRecords = data.records;
+		localStorage.setItem(rankingStorageKey, JSON.stringify(records));
+		rankingRecords = records;
 		renderLeaderboard();
 		rankingStatusElement.textContent = '';
-		try {
-			localStorage.setItem(playerNameStorageKey, name);
-			playerName = name;
-		} catch (error) {
-			console.error('이 브라우저에 이름을 기억하지 못했습니다.', error);
-			rankingStatusElement.textContent = '기록은 저장했지만 이 브라우저에 이름을 기억하지 못했어요.';
-		}
-		return data.rank;
 	} catch (error) {
-		console.error('순위 기록을 저장하지 못했습니다.', error);
-		rankingStatusElement.textContent = '순위를 서버에 저장하지 못했어요. 연결을 확인하고 다시 시도해주세요.';
-		setMessage('완성했지만 순위를 서버에 저장하지 못했어요.', 'alert');
+		console.error('이 브라우저에 순위 기록을 저장하지 못했습니다.', error);
+		rankingStatusElement.textContent = '이 브라우저에 순위를 저장하지 못했어요.';
+		setMessage('완성했지만 이 브라우저에 순위를 저장하지 못했어요.', 'alert');
 		return false;
 	}
+
+	try {
+		localStorage.setItem(playerNameStorageKey, name);
+		playerName = name;
+	} catch (error) {
+		console.error('이 브라우저에 이름을 기억하지 못했습니다.', error);
+	}
+	return rank;
 }
 
-async function recordCompletion() {
+function recordCompletion() {
 	if (gameComplete || gameOver) return;
 	gameComplete = true;
 	clearInterval(timerId);
 	setMessage(`완성했어요! ${timerElement.textContent} 만에 정원을 채웠습니다.`, 'success');
 	if (playerName) {
-		const rank = await saveRecord(playerName);
+		const rank = saveRecord(playerName);
 		if (rank > 10) setMessage('완성했어요! 상위 10위 기록에는 들지 못했어요.', 'success');
 		else if (rank !== false) setMessage(`완성 기록을 ${rank}위에 저장했어요! ${timerElement.textContent}`, 'success');
 		return;
@@ -332,14 +343,14 @@ document.getElementById('hint').addEventListener('click', () => {
 	}
 });
 difficultyElement.addEventListener('change', startGame);
-recordForm.addEventListener('submit', async event => {
+recordForm.addEventListener('submit', event => {
 	event.preventDefault();
 	const name = recordNameElement.value.trim();
 	if (!name) {
 		recordNameElement.focus();
 		return;
 	}
-	const rank = await saveRecord(name);
+	const rank = saveRecord(name);
 	if (rank !== false) {
 		awaitingRecord = false;
 		recordDialog.close();
