@@ -11,7 +11,6 @@ const recordForm = document.getElementById('recordForm');
 const recordNameElement = document.getElementById('recordName');
 const modes = [...document.querySelectorAll('[data-mode]')];
 const playerNameStorageKey = 'nonogramPlayerName';
-const rankingStorageKey = 'nonogramLeaderboard';
 const difficultyNames = { easy: '느긋하게', medium: '알맞게', hard: '깊게' };
 
 const puzzles = {
@@ -67,6 +66,7 @@ let dragValue = 0;
 let rankingRecords = [];
 let playerName = '';
 let awaitingRecord = false;
+let rankingRequestId = 0;
 
 function setMessage(text, type = '') {
 	messageElement.textContent = text;
@@ -116,10 +116,7 @@ function renderLeaderboard() {
 	const level = difficultyElement.value;
 	rankingLevelElement.textContent = difficultyNames[level];
 	rankingListElement.replaceChildren();
-	const records = rankingRecords
-		.filter(record => record.difficulty === level)
-		.sort((first, second) => first.seconds - second.seconds || first.date.localeCompare(second.date))
-		.slice(0, 10);
+	const records = rankingRecords;
 	if (records.length === 0) {
 		const emptyMessage = document.createElement('li');
 		emptyMessage.className = 'ranking-empty';
@@ -144,60 +141,45 @@ function renderLeaderboard() {
 	});
 }
 
-function loadRanking() {
+async function loadRanking(level = difficultyElement.value) {
+	const requestId = ++rankingRequestId;
 	try {
-		const storedRecords = JSON.parse(localStorage.getItem(rankingStorageKey) || '[]');
-		if (!Array.isArray(storedRecords)) throw new Error('저장된 순위 데이터 형식이 올바르지 않습니다.');
-		rankingRecords = storedRecords.filter(record =>
-			record &&
-			typeof record.name === 'string' &&
-			Number.isInteger(record.seconds) &&
-			record.seconds >= 0 &&
-			difficultyNames[record.difficulty] &&
-			typeof record.date === 'string'
-		);
-		rankingStatusElement.textContent = '';
-	} catch (error) {
-		console.error('이 브라우저에서 노노그램 순위 기록을 불러오지 못했습니다.', error);
-		rankingStatusElement.textContent = '이 브라우저에서 순위를 불러오지 못했어요.';
-	}
-	renderLeaderboard();
-}
-
-function saveRecord(name) {
-	const record = {
-		name,
-		seconds,
-		difficulty: difficultyElement.value,
-		date: new Date().toISOString()
-	};
-	const levelRecords = [...rankingRecords.filter(item => item.difficulty === record.difficulty), record]
-		.sort((first, second) => first.seconds - second.seconds || first.date.localeCompare(second.date));
-	const rank = levelRecords.indexOf(record) + 1;
-	const records = [
-		...rankingRecords.filter(item => item.difficulty !== record.difficulty),
-		...levelRecords.slice(0, 10)
-	];
-
-	try {
-		localStorage.setItem(rankingStorageKey, JSON.stringify(records));
+		const records = await window.scoreApi.getRecords('nonogram', level);
+		if (requestId !== rankingRequestId || level !== difficultyElement.value) return;
 		rankingRecords = records;
 		renderLeaderboard();
 		rankingStatusElement.textContent = '';
 	} catch (error) {
-		console.error('이 브라우저에 노노그램 순위 기록을 저장하지 못했습니다.', error);
-		rankingStatusElement.textContent = '이 브라우저에 순위를 저장하지 못했어요.';
-		setMessage('완성했지만 이 브라우저에 순위를 저장하지 못했어요.', 'alert');
+		console.error('서버에서 노노그램 순위 기록을 불러오지 못했습니다.', error);
+		if (requestId === rankingRequestId && level === difficultyElement.value) {
+			rankingStatusElement.textContent = '서버에서 순위를 불러오지 못했어요.';
+		}
+	}
+}
+
+async function saveRecord(name) {
+	const level = difficultyElement.value;
+	try {
+		const rank = await window.scoreApi.saveRecord({
+			game: 'nonogram',
+			difficulty: level,
+			name,
+			seconds
+		});
+		try {
+			localStorage.setItem(playerNameStorageKey, name);
+			playerName = name;
+		} catch (error) {
+			console.error('이 브라우저에 이름을 기억하지 못했습니다.', error);
+		}
+		await loadRanking(level);
+		return rank;
+	} catch (error) {
+		console.error('서버에 노노그램 순위 기록을 저장하지 못했습니다.', error);
+		if (level === difficultyElement.value) rankingStatusElement.textContent = '서버에 순위를 저장하지 못했어요.';
+		setMessage('완성했지만 서버에 순위를 저장하지 못했어요.', 'alert');
 		return false;
 	}
-
-	try {
-		localStorage.setItem(playerNameStorageKey, name);
-		playerName = name;
-	} catch (error) {
-		console.error('이 브라우저에 이름을 기억하지 못했습니다.', error);
-	}
-	return rank;
 }
 
 function createClue(values, className, row, column) {
@@ -307,10 +289,11 @@ function completeGame() {
 	setMessage(`그림을 완성했어요! ${timerElement.textContent}`, 'success');
 	render();
 	if (playerName) {
-		const rank = saveRecord(playerName);
-		if (rank === false) return;
-		if (rank > 10) setMessage('완성했어요! 상위 10위 기록에는 들지 못했어요.', 'success');
-		else setMessage(`완성 기록을 ${rank}위에 저장했어요! ${timerElement.textContent}`, 'success');
+		saveRecord(playerName).then(rank => {
+			if (rank === false) return;
+			if (rank > 10) setMessage('완성했어요! 상위 10위 기록에는 들지 못했어요.', 'success');
+			else setMessage(`완성 기록을 ${rank}위에 저장했어요! ${timerElement.textContent}`, 'success');
+		});
 		return;
 	}
 	awaitingRecord = true;
@@ -391,18 +374,24 @@ document.addEventListener('pointerup', () => {
 document.getElementById('newGame').addEventListener('click', startGame);
 document.getElementById('checkGame').addEventListener('click', checkGame);
 difficultyElement.addEventListener('change', startGame);
-recordForm.addEventListener('submit', event => {
+recordForm.addEventListener('submit', async event => {
 	event.preventDefault();
 	const name = recordNameElement.value.trim();
 	if (!name) {
 		recordNameElement.focus();
 		return;
 	}
-	const rank = saveRecord(name);
-	if (rank === false) return;
-	awaitingRecord = false;
-	recordDialog.close();
-	setMessage(rank > 10 ? '완성했어요! 상위 10위 기록에는 들지 못했어요.' : `완성 기록을 ${rank}위에 저장했어요! ${timerElement.textContent}`, 'success');
+	const submitButton = recordForm.querySelector('[type="submit"]');
+	submitButton.disabled = true;
+	try {
+		const rank = await saveRecord(name);
+		if (rank === false) return;
+		awaitingRecord = false;
+		recordDialog.close();
+		setMessage(rank > 10 ? '완성했어요! 상위 10위 기록에는 들지 못했어요.' : `완성 기록을 ${rank}위에 저장했어요! ${timerElement.textContent}`, 'success');
+	} finally {
+		submitButton.disabled = false;
+	}
 });
 document.getElementById('skipRecord').addEventListener('click', () => recordDialog.close());
 recordDialog.addEventListener('close', () => {
