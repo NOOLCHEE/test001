@@ -18,6 +18,7 @@ let puzzle = [];
 let entries = [];
 let notes = [];
 let rankingRecords = [];
+let rankingLoading = false;
 let playerName = '';
 let selected = null;
 let mistakes = 0;
@@ -118,7 +119,7 @@ function renderLeaderboard() {
 	if (records.length === 0) {
 		const emptyMessage = document.createElement('li');
 		emptyMessage.className = 'ranking-empty';
-		emptyMessage.textContent = '아직 기록이 없어요. 첫 기록을 남겨보세요!';
+		emptyMessage.textContent = rankingLoading ? '순위를 불러오는 중...' : '아직 기록이 없어요. 첫 기록을 남겨보세요!';
 		rankingListElement.append(emptyMessage);
 		return;
 	}
@@ -141,15 +142,22 @@ function renderLeaderboard() {
 
 async function loadRanking(level = difficultyElement.value) {
 	const requestId = ++rankingRequestId;
+	rankingLoading = true;
+	rankingRecords = [];
+	rankingStatusElement.textContent = '';
+	renderLeaderboard();
 	try {
 		const records = await window.scoreApi.getRecords('sudoku', level);
 		if (requestId !== rankingRequestId || level !== difficultyElement.value) return;
 		rankingRecords = records;
+		rankingLoading = false;
 		renderLeaderboard();
 		rankingStatusElement.textContent = '';
 	} catch (error) {
 		console.error('서버에서 스도쿠 순위 기록을 불러오지 못했습니다.', error);
 		if (requestId === rankingRequestId && level === difficultyElement.value) {
+			rankingLoading = false;
+			renderLeaderboard();
 			rankingStatusElement.textContent = '서버에서 순위를 불러오지 못했어요.';
 		}
 	}
@@ -326,7 +334,10 @@ document.getElementById('hint').addEventListener('click', () => {
 		setMessage('정답 하나를 살짝 밝혀두었어요.', 'success');
 	}
 });
-difficultyElement.addEventListener('change', startGame);
+difficultyElement.addEventListener('change', () => {
+	startGame();
+	loadRanking();
+});
 recordForm.addEventListener('submit', async event => {
 	event.preventDefault();
 	const name = recordNameElement.value.trim();

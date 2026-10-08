@@ -64,6 +64,7 @@ let activePointer = false;
 let visitedCells = new Set();
 let dragValue = 0;
 let rankingRecords = [];
+let rankingLoading = false;
 let playerName = '';
 let awaitingRecord = false;
 let rankingRequestId = 0;
@@ -120,7 +121,7 @@ function renderLeaderboard() {
 	if (records.length === 0) {
 		const emptyMessage = document.createElement('li');
 		emptyMessage.className = 'ranking-empty';
-		emptyMessage.textContent = '아직 기록이 없어요. 첫 기록을 남겨보세요!';
+		emptyMessage.textContent = rankingLoading ? '순위를 불러오는 중...' : '아직 기록이 없어요. 첫 기록을 남겨보세요!';
 		rankingListElement.append(emptyMessage);
 		return;
 	}
@@ -143,15 +144,22 @@ function renderLeaderboard() {
 
 async function loadRanking(level = difficultyElement.value) {
 	const requestId = ++rankingRequestId;
+	rankingLoading = true;
+	rankingRecords = [];
+	rankingStatusElement.textContent = '';
+	renderLeaderboard();
 	try {
 		const records = await window.scoreApi.getRecords('nonogram', level);
 		if (requestId !== rankingRequestId || level !== difficultyElement.value) return;
 		rankingRecords = records;
+		rankingLoading = false;
 		renderLeaderboard();
 		rankingStatusElement.textContent = '';
 	} catch (error) {
 		console.error('서버에서 노노그램 순위 기록을 불러오지 못했습니다.', error);
 		if (requestId === rankingRequestId && level === difficultyElement.value) {
+			rankingLoading = false;
+			renderLeaderboard();
 			rankingStatusElement.textContent = '서버에서 순위를 불러오지 못했어요.';
 		}
 	}
@@ -244,7 +252,6 @@ function render() {
 				cell.classList.add('crossed');
 				cell.textContent = '×';
 			}
-			if (solution[row][column] === '0' && value === 1) cell.classList.add('wrong');
 			cell.addEventListener('click', () => applyMode(row, column));
 			cell.addEventListener('contextmenu', event => {
 				event.preventDefault();
@@ -373,7 +380,10 @@ document.addEventListener('pointerup', () => {
 
 document.getElementById('newGame').addEventListener('click', startGame);
 document.getElementById('checkGame').addEventListener('click', checkGame);
-difficultyElement.addEventListener('change', startGame);
+difficultyElement.addEventListener('change', () => {
+	startGame();
+	loadRanking();
+});
 recordForm.addEventListener('submit', async event => {
 	event.preventDefault();
 	const name = recordNameElement.value.trim();

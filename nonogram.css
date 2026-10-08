@@ -85,10 +85,6 @@
 	color: #a5b1ae;
 }
 
-.nonogram-cell.wrong {
-	background: var(--coral-soft);
-}
-
 .nonogram-cell:focus-visible {
 	z-index: 1;
 	outline: 3px solid var(--gold);
