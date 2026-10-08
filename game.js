@@ -10,7 +10,6 @@ const rankingStatusElement = document.getElementById('rankingStatus');
 const recordDialog = document.getElementById('recordDialog');
 const recordForm = document.getElementById('recordForm');
 const recordNameElement = document.getElementById('recordName');
-const playerNameStorageKey = 'sudokuPlayerName';
 const difficultyNames = { easy: '느긋하게', medium: '알맞게', hard: '깊게' };
 const size = 9;
 let solution = [];
@@ -19,7 +18,6 @@ let entries = [];
 let notes = [];
 let rankingRecords = [];
 let rankingLoading = false;
-let playerName = '';
 let selected = null;
 let mistakes = 0;
 let hints = 3;
@@ -172,12 +170,6 @@ async function saveRecord(name) {
 			name,
 			seconds
 		});
-		try {
-			localStorage.setItem(playerNameStorageKey, name);
-			playerName = name;
-		} catch (error) {
-			console.error('이 브라우저에 이름을 기억하지 못했습니다.', error);
-		}
 		await loadRanking(level);
 		return rank;
 	} catch (error) {
@@ -188,23 +180,35 @@ async function saveRecord(name) {
 	}
 }
 
+async function requestRecordName() {
+	const level = difficultyElement.value;
+	try {
+		const result = await window.scoreApi.checkRecord({
+			game: 'sudoku',
+			difficulty: level,
+			seconds
+		});
+		if (!result.qualifies) {
+			setMessage('완성했어요! 상위 5위 기록에는 들지 못했어요.', 'success');
+			return;
+		}
+		awaitingRecord = true;
+		recordNameElement.value = '';
+		recordDialog.showModal();
+		recordNameElement.focus();
+	} catch (error) {
+		console.error('상위 5위 기록 여부를 확인하지 못했습니다.', error);
+		if (level === difficultyElement.value) rankingStatusElement.textContent = '서버에서 순위를 확인하지 못했어요.';
+		setMessage('완성했지만 상위 5위 여부를 확인하지 못했어요.', 'alert');
+	}
+}
+
 function recordCompletion() {
 	if (gameComplete || gameOver) return;
 	gameComplete = true;
 	clearInterval(timerId);
 	setMessage(`완성했어요! ${timerElement.textContent} 만에 정원을 채웠습니다.`, 'success');
-	if (playerName) {
-		saveRecord(playerName).then(rank => {
-			if (rank === false) return;
-			if (rank > 10) setMessage('완성했어요! 상위 10위 기록에는 들지 못했어요.', 'success');
-			else setMessage(`완성 기록을 ${rank}위에 저장했어요! ${timerElement.textContent}`, 'success');
-		});
-		return;
-	}
-	awaitingRecord = true;
-	recordNameElement.value = '';
-	recordDialog.showModal();
-	recordNameElement.focus();
+	requestRecordName();
 }
 
 function render() {
@@ -349,11 +353,11 @@ recordForm.addEventListener('submit', async event => {
 	submitButton.disabled = true;
 	try {
 		const rank = await saveRecord(name);
-		if (rank !== false) {
-			awaitingRecord = false;
-			recordDialog.close();
-			setMessage(rank > 10 ? '완성했어요! 상위 10위 기록에는 들지 못했어요.' : `완성 기록을 ${rank}위에 저장했어요! ${timerElement.textContent}`, 'success');
-		}
+		if (rank === false) return;
+		awaitingRecord = false;
+		recordDialog.close();
+		if (rank === null) setMessage('순위가 바뀌어 상위 5위에 들지 못했어요. 기록하지 않았습니다.', 'alert');
+		else setMessage(`완성 기록을 ${rank}위에 저장했어요! ${timerElement.textContent}`, 'success');
 	} finally {
 		submitButton.disabled = false;
 	}
@@ -379,11 +383,5 @@ for (let number = 1; number <= 9; number++) {
 	padElement.append(button);
 }
 
-try {
-	playerName = localStorage.getItem(playerNameStorageKey)?.slice(0, 20) || '';
-} catch (error) {
-	console.error('저장된 이름을 불러오지 못했습니다.', error);
-	rankingStatusElement.textContent = '이 브라우저에서 저장된 이름을 불러오지 못했어요.';
-}
 loadRanking();
 startGame();
