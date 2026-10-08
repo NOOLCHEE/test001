@@ -1,4 +1,4 @@
-const games = new Set(['sudoku', 'nonogram']);
+const games = new Set(['sudoku', 'nonogram', 'minesweeper']);
 const difficulties = new Set(['easy', 'medium', 'hard']);
 
 function json(data, status = 200) {
