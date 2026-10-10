@@ -47,7 +47,7 @@ button { color: inherit; cursor: pointer; }
 .eyebrow { margin: 0 0 4px; color: var(--green); font-size: 10px; font-weight: 800; }
 h1 { margin: 0; color: var(--ink); font-family: 'Gowun Batang', serif; font-size: 30px; font-weight: 700; line-height: 1.2; }
 .header-actions { display: flex; align-items: center; gap: 8px; }
-.header-button, .icon-button {
+.outline-button, .icon-button {
     display: inline-flex;
     min-height: 42px;
     align-items: center;
@@ -61,10 +61,8 @@ h1 { margin: 0; color: var(--ink); font-family: 'Gowun Batang', serif; font-size
     font-weight: 800;
     transition: transform .16s ease, background .16s ease, border-color .16s ease;
 }
-.header-button:hover, .icon-button:hover { transform: translateY(-1px); border-color: var(--line-strong); background: white; }
+.outline-button:hover, .icon-button:hover { transform: translateY(-1px); border-color: var(--line-strong); background: white; }
 .guide-open-btn { background: var(--mint); border-color: #b6d9cd; }
-.icon-button { width: 42px; padding: 0; font-size: 22px; }
-.desc { margin: 0 0 18px; color: var(--muted); font-size: 12px; }
 .game-layout { display: grid; grid-template-columns: minmax(0, 1fr) 250px; align-items: start; gap: 16px; }
 
 #game-container {
@@ -101,6 +99,7 @@ h1 { margin: 0; color: var(--ink); font-family: 'Gowun Batang', serif; font-size
 .timer-board { background: #f0f6f2; color: var(--ink); }
 .info-label { color: var(--muted); font-size: 10px; font-weight: 800; }
 .info-box strong { display: flex; align-items: baseline; justify-content: flex-end; gap: 5px; font-family: var(--mono); font-size: 22px; font-weight: 500; line-height: 1.15; text-align: right; font-variant-numeric: tabular-nums; }
+.score-board strong { justify-content: center; text-align: center; }
 .timer-board strong { justify-content: center; text-align: center; }
 .info-unit { font-family: Manrope, sans-serif; font-size: 11px; font-weight: 800; }
 .timer-board.changed { animation: score-flash .3s ease-out; }
@@ -108,12 +107,14 @@ h1 { margin: 0; color: var(--ink); font-family: 'Gowun Batang', serif; font-size
 .live-counter { display: grid; flex: 1; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; min-width: 0; padding: 7px 4px; border: 1px solid var(--line); border-radius: 10px; background: white; }
 .live-counter > span { display: flex; justify-content: center; gap: 2px; color: var(--muted); font-size: 11px; font-weight: 800; white-space: nowrap; }
 .live-counter > span > span { color: var(--ink); font-family: var(--mono); }
-.bonus-button { min-width: 75px; padding: 0 11px; border: 1px solid var(--line); border-radius: 10px; background: #edf0ee; color: #9aa6a3; font-size: 11px; font-weight: 800; white-space: nowrap; }
+.bonus-button { min-width: 75px; padding: 0 11px; border: 1px solid var(--line); border-radius: 10px; background: #f0f6f2; color: var(--muted); font-size: 11px; font-weight: 800; white-space: nowrap; transition: background .16s ease, border-color .16s ease, color .16s ease; }
 .bonus-button:disabled { cursor: not-allowed; }
 .bonus-button.ready-to-boost { border-color: var(--gold); background: var(--gold) !important; color: #453719 !important; cursor: pointer !important; box-shadow: 0 0 0 3px rgba(233, 184, 94, .2); animation: gold-pulse .8s infinite alternate ease-in-out; }
 #progress-container { width: 100%; height: 8px; margin-bottom: 15px; overflow: hidden; border: 1px solid var(--line); border-radius: 99px; background: #edf1ef; }
-#progress-bar { width: 100%; height: 100%; border-radius: inherit; background: var(--green); transition: width .1s linear; }
-#progress-bar.warning { background: var(--coral); }
+#progress-bar { width: 100%; height: 100%; border-radius: inherit; transition: width .1s linear, background-color .2s ease; }
+#progress-bar.progress-blue { background: #5279a8; }
+#progress-bar.progress-yellow { background: var(--gold); }
+#progress-bar.progress-red { background: var(--coral); }
 .bakery-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 #game-container[data-oven-count="4"] .bakery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 #game-container[data-oven-count="6"] .bakery-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -180,9 +181,6 @@ th { color: var(--muted); background: #f2f6f3; font-size: 10px; }
 .report-card-box.success-theme h3 { color: var(--green); }
 .report-card-box ul, .report-card-box ol { margin: 0; padding-left: 20px; color: var(--muted); font-size: 11px; line-height: 1.7; }
 .report-card-box li { margin-bottom: 3px; white-space: normal; }
-#game-over button { min-height: 42px; margin-top: auto; padding: 0 22px; border: 1px solid var(--coral); border-radius: 9px; background: var(--coral); color: white; font-size: 12px; font-weight: 800; box-shadow: none; }
-#game-over button:hover { background: #d87864; }
-
 .ranking-panel { position: sticky; top: 16px; min-width: 0; padding: 17px; border: 1px solid rgba(159, 181, 180, .6); border-radius: 14px; background: rgba(255, 253, 248, .92); box-shadow: 0 14px 36px rgba(39, 62, 61, .08); }
 .ranking-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
 .ranking-panel-heading .eyebrow { margin-bottom: 2px; }
@@ -220,8 +218,8 @@ button:focus-visible, select:focus-visible, .oven-slot:focus-visible { outline: 
     body { padding: 16px 12px 24px; }
     .header-zone { align-items: flex-start; flex-direction: column; gap: 10px; }
     h1 { font-size: 25px; }
-    .header-actions { display: grid; width: 100%; grid-template-columns: minmax(0, 1fr) 42px; }
-    .header-button { min-width: 0; padding: 0 8px; font-size: 11px; }
+    .header-actions { display: grid; width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .outline-button, .icon-button { min-width: 0; padding: 0 8px; font-size: 11px; }
     #game-container { padding: 13px; border-radius: 14px; }
     .mode-buttons { gap: 5px; }
     .mode-btn { padding: 6px 4px; font-size: 10px; }

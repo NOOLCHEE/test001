@@ -42,7 +42,6 @@ document.querySelectorAll('.mode-btn').forEach(btn => {
     });
 });
 
-document.getElementById('retry-btn').addEventListener('click', startGame);
 document.getElementById('main-reset-btn').addEventListener('click', startGame);
 document.getElementById('guide-open-btn').addEventListener('click', function() { guideModal.style.display = "flex"; });
 document.getElementById('guide-close-btn').addEventListener('click', function() { guideModal.style.display = "none"; });
@@ -113,15 +112,11 @@ function refreshLiveCounterUI() {
     if (hasSet) {
         isBonusReady = true;
         timeBonusBtn.disabled = false;
-        timeBonusBtn.className = "ready-to-boost"; 
     } else {
         isBonusReady = false;
         timeBonusBtn.disabled = true;
-        timeBonusBtn.className = "";
-        timeBonusBtn.style.background = "#cbd5e1";
-        timeBonusBtn.style.color = "#94a3b8";
-        timeBonusBtn.style.cursor = "not-allowed";
     }
+    timeBonusBtn.classList.toggle('ready-to-boost', hasSet);
 }
 
 function startGame() {
@@ -144,7 +139,7 @@ function startGame() {
 function updateTimerUI() {
     timeLeftDisplay.innerText = timeLeft.toFixed(1);
     progressBar.style.width = Math.min(100, Math.max(0, (timeLeft / MAX_TIME) * 100)) + "%";
-    progressBar.className = timeLeft <= 10.0 ? 'warning' : '';
+    progressBar.className = timeLeft > 20 ? 'progress-blue' : timeLeft > 10 ? 'progress-yellow' : 'progress-red';
 }
 
 function triggerFeedback(timeChange) {

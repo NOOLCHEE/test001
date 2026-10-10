@@ -20,21 +20,19 @@
             <h1>스머프 베이커리</h1>
         </div>
         <div class="header-actions">
-            <button id="guide-open-btn" class="header-button guide-open-btn" type="button">📖 게임 안내</button>
-            <button id="main-reset-btn" class="icon-button" type="button" aria-label="게임 초기화" title="게임 초기화">↻</button>
+            <button id="main-reset-btn" class="outline-button" type="button">↻ 다시하기</button>
+            <button id="guide-open-btn" class="icon-button guide-open-btn" type="button">📖 게임 안내</button>
         </div>
     </div>
-    <p class="desc">빵을 제때 꺼내 점수를 쌓고, 다섯 종류를 모아 시간을 더 얻으세요.</p>
-
     <div class="game-layout">
     <div id="game-container">
         <!-- 난이도 셀렉터 -->
         <div id="mode-selection" class="mode-zone">
             <span class="mode-title">화덕 수</span>
             <div class="mode-buttons">
-                <button class="mode-btn" data-ovens="4">4개 · 여유롭게</button>
-                <button class="mode-btn active" data-ovens="6">6개 · 기본</button>
-                <button class="mode-btn" data-ovens="8">8개 · 도전</button>
+                <button class="mode-btn" data-ovens="4">4개</button>
+                <button class="mode-btn active" data-ovens="6">6개</button>
+                <button class="mode-btn" data-ovens="8">8개</button>
             </div>
         </div>
 
@@ -68,7 +66,6 @@
         <div id="game-over">
             <h2>한 판 끝!</h2>
             <p>최종 점수 <strong><span id="final-score">0</span>점</strong></p>
-            <button id="retry-btn" type="button">다시 굽기</button>
         </div>
 
         <!-- 빵별 굽기 타이밍 안내 -->
@@ -92,42 +89,42 @@
                             <tr>
                                 <td class="b-name">🥐 크로와상</td>
                                 <td>3.0s</td>
-                                <td>0.0s~1.5s</td>
-                                <td class="highlight-td">1.5s~2.0s</td>
-                                <td>2.0s~3.0s</td>
-                                <td>3.0s~</td>
+                                <td>0.0s~4.5s</td>
+                                <td class="highlight-td">4.5s~5.0s</td>
+                                <td>5.0s~9.0s</td>
+                                <td>9.0s~</td>
                             </tr>
                             <tr>
                                 <td class="b-name">🥨 프레첼</td>
-                                <td>4.0s</td>
-                                <td>0.0s~1.5s</td>
-                                <td class="highlight-td">1.5s~2.0s</td>
-                                <td>2.0s~3.0s</td>
-                                <td>3.0s~</td>
+                                <td>5.0s</td>
+                                <td>0.0s~4.5s</td>
+                                <td class="highlight-td">4.5s~5.0s</td>
+                                <td>5.0s~9.0s</td>
+                                <td>9.0s~</td>
                             </tr>
                             <tr>
                                 <td class="b-name">🍞 식빵</td>
-                                <td>5.0s</td>
-                                <td>0.0s~1.5s</td>
-                                <td class="highlight-td">1.5s~2.0s</td>
-                                <td>2.0s~3.0s</td>
-                                <td>3.0s~</td>
+                                <td>9.0s</td>
+                                <td>0.0s~4.5s</td>
+                                <td class="highlight-td">4.5s~5.0s</td>
+                                <td>5.0s~9.0s</td>
+                                <td>9.0s~</td>
                             </tr>
                             <tr>
                                 <td class="b-name">🥯 도넛</td>
-                                <td>6.0s</td>
-                                <td>0.0s~1.5s</td>
-                                <td class="highlight-td">1.5s~2.0s</td>
-                                <td>2.0s~3.0s</td>
-                                <td>3.0s~</td>
+                                <td>15.0s</td>
+                                <td>0.0s~4.5s</td>
+                                <td class="highlight-td">4.5s~5.0s</td>
+                                <td>5.0s~9.0s</td>
+                                <td>9.0s~</td>
                             </tr>
                             <tr>
                                 <td class="b-name">🥖 바게트</td>
-                                <td>7.0s</td>
-                                <td>0.0s~1.5s</td>
-                                <td class="highlight-td">1.5s~2.0s</td>
-                                <td>2.0s~3.0s</td>
-                                <td>3.0s~</td>
+                                <td>20.0s</td>
+                                <td>0.0s~4.5s</td>
+                                <td class="highlight-td">4.5s~5.0s</td>
+                                <td>5.0s~9.0s</td>
+                                <td>9.0s~</td>
                             </tr>
                         </tbody>
                     </table>
