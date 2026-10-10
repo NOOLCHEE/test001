@@ -5,74 +5,92 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=no">
     <title>오리지널 지뢰찾기</title>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #bdbdbd; margin: 0; padding: 15px; user-select: none; -webkit-user-select: none; }
+        :root {
+            --ink: #25343a;
+            --muted: #718087;
+            --paper: #f7f5ef;
+            --panel: #fffdf8;
+            --surface: #e8efeb;
+            --line: #d7e0de;
+            --line-strong: #9fb5b4;
+            --mint: #d8eee4;
+            --mint-line: #b6d9cd;
+            --mint-strong: #4b9d80;
+            --coral: #e48672;
+            --coral-soft: #fae4dc;
+            --gold: #e9b85e;
+            --number-one: #5279a8;
+            --number-four: #42566a;
+            --number-five: #8b5148;
+            --number-six: #3e7d78;
+        }
+
+        body { font-family: sans-serif; text-align: center; background: var(--paper); color: var(--ink); margin: 0; padding: 15px; user-select: none; -webkit-user-select: none; }
         .nav { display: flex; justify-content: space-between; text-align: left; margin-bottom: 12px; font-size: 0.9rem; }
-        .nav a { text-decoration: none; color: #424242; font-weight: bold; }
+        .nav a { text-decoration: none; color: var(--muted); font-weight: bold; }
 
         /* 난이도 선택 버튼 스타일 */
         #difficulty-box { margin-bottom: 15px; display: flex; justify-content: center; gap: 8px; }
-        .diff-btn { padding: 6px 12px; font-size: 0.9rem; font-weight: bold; border: 3px solid; border-color: #fff #7b7b7b #7b7b7b #fff; background: #bdbdbd; cursor: pointer; outline: none; }
-        .diff-btn.active { border-color: #7b7b7b #fff #fff #7b7b7b; background: #c6c6c6; }
+        .diff-btn { padding: 6px 12px; font-size: 0.9rem; font-weight: bold; border: 3px solid; border-color: var(--panel) var(--line-strong) var(--line-strong) var(--panel); background: var(--surface); color: var(--ink); cursor: pointer; outline: none; }
+        .diff-btn.active { border-color: var(--line-strong) var(--panel) var(--panel) var(--line-strong); background: var(--mint); }
 
         /* 모바일 대응 가로 스크롤 박스 */
         #game-wrapper { width: 100%; overflow-x: auto; padding-bottom: 10px; text-align: center; -webkit-overflow-scrolling: touch; }
 
         /* 오리지널 윈도우 감성의 상단 바 */
-        #game-outer { display: inline-block; background: #bdbdbd; border: 3px solid; border-color: #fff #7b7b7b #7b7b7b #fff; padding: 6px; border-radius: 2px; text-align: left; }
-        #dashboard { display: flex; justify-content: space-between; align-items: center; background: #bdbdbd; border: 3px solid; border-color: #7b7b7b #fff #fff #7b7b7b; padding: 4px 10px; margin-bottom: 6px; }
+        #game-outer { display: inline-block; background: var(--surface); border: 3px solid; border-color: var(--panel) var(--line-strong) var(--line-strong) var(--panel); padding: 6px; border-radius: 2px; text-align: left; }
+        #dashboard { display: flex; justify-content: space-between; align-items: center; background: var(--surface); border: 3px solid; border-color: var(--line-strong) var(--panel) var(--panel) var(--line-strong); padding: 4px 10px; margin-bottom: 6px; }
 
         /* 전광판 숫자 스타일 */
-        .digital-counter { background: #000; color: #ff0000; font-family: monospace; font-size: 1.8rem; font-weight: bold; padding: 2px 6px; border-radius: 3px; min-width: 50px; text-align: right; }
+        .digital-counter { background: var(--ink); color: var(--coral); font-family: monospace; font-size: 1.8rem; font-weight: bold; padding: 2px 6px; border-radius: 3px; min-width: 50px; text-align: right; }
 
         /* 오리지널 스마일 버튼 */
-        #face-btn { font-size: 1.5rem; width: 36px; height: 36px; background: #bdbdbd; border: 3px solid; border-color: #fff #7b7b7b #7b7b7b #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; outline: none; }
-        #face-btn:active { border-color: #7b7b7b #fff #fff #7b7b7b; }
+        #face-btn { font-size: 1.5rem; width: 36px; height: 36px; background: var(--mint); border: 3px solid; border-color: var(--panel) var(--line-strong) var(--line-strong) var(--panel); cursor: pointer; display: flex; align-items: center; justify-content: center; outline: none; }
+        #face-btn:active { border-color: var(--line-strong) var(--panel) var(--panel) var(--line-strong); }
 
         /* 지뢰판 격자 */
-        #board { display: grid; border: 3px solid; border-color: #7b7b7b #fff #fff #7b7b7b; background: #7b7b7b; }
+        #board { display: grid; border: 3px solid; border-color: var(--line-strong) var(--panel) var(--panel) var(--line-strong); background: var(--line-strong); }
 
         /* 셀 스타일 */
-        .cell { width: 32px; height: 32px; background: #bdbdbd; border: 3px solid; border-color: #fff #7b7b7b #7b7b7b #fff; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1rem; cursor: pointer; }
-        .cell.revealed { background: #d9d9d9; border: 1px solid #7b7b7b; }
-        .cell.mine { background: #ff4d4d; }
-        .cell.selected-cell { outline: 3px solid #ffeb3b; outline-offset: -3px; } /* 🛠️ 양클릭용 선택 효과 */
+        .cell { width: 32px; height: 32px; background: var(--mint); border: 3px solid; border-color: var(--panel) var(--line-strong) var(--line-strong) var(--panel); box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1rem; cursor: pointer; touch-action: manipulation; }
+        .cell.revealed { background: var(--panel); border: 1px solid var(--line-strong); }
+        .cell.mine { background: var(--coral-soft); }
+        .cell.selected-cell { outline: 3px solid var(--gold); outline-offset: -3px; }
 
-        /* 오리지널 숫자별 고유 색상 */
-        .c-1 { color: #0000ff; }
-        .c-2 { color: #008000; }
-        .c-3 { color: #ff0000; }
-        .c-4 { color: #000080; }
-        .c-5 { color: #800000; }
-        .c-6 { color: #008080; }
-        .c-7 { color: #000000; }
-        .c-8 { color: #808080; }
+        /* 숫자별로 앱 공통 팔레트의 대비색 사용 */
+        .c-1 { color: var(--number-one); }
+        .c-2 { color: var(--mint-strong); }
+        .c-3 { color: var(--coral); }
+        .c-4 { color: var(--number-four); }
+        .c-5 { color: var(--number-five); }
+        .c-6 { color: var(--number-six); }
+        .c-7 { color: var(--ink); }
+        .c-8 { color: var(--muted); }
 
-        #status-text { margin: 10px; font-size: 1.1rem; font-weight: bold; color: #333; min-height: 1.5em; }
+        #status-text { margin: 10px; font-size: 1.1rem; font-weight: bold; color: var(--ink); min-height: 1.5em; }
 
         /* 🛠️ [신규 추가] 모바일 조작용 보조 컨트롤 패널 스타일 */
         #mobile-controls { display: flex; justify-content: center; gap: 12px; margin: 10px auto; max-width: 320px; }
-        .control-btn { flex: 1; padding: 10px; font-size: 0.95rem; font-weight: bold; border: 3px solid; border-color: #fff #7b7b7b #7b7b7b #fff; background: #bdbdbd; cursor: pointer; outline: none; border-radius: 4px; display: flex; align-items: center; justify-content: center; gap: 4px; }
-        .control-btn:active { border-color: #7b7b7b #fff #fff #7b7b7b; }
-        .control-btn.active-mode { background: #81d4fa; border-color: #4fc3f7 #0288d1 #0288d1 #4fc3f7; color: #01579b; }
+        .control-btn { flex: 1; padding: 10px; font-size: 0.95rem; font-weight: bold; border: 3px solid; border-color: var(--panel) var(--line-strong) var(--line-strong) var(--panel); background: var(--surface); color: var(--ink); cursor: pointer; outline: none; border-radius: 4px; display: flex; align-items: center; justify-content: center; gap: 4px; }
+        .control-btn:active { border-color: var(--line-strong) var(--panel) var(--panel) var(--line-strong); }
+        .control-btn.active-mode { background: var(--mint); border-color: var(--mint-line) var(--mint-strong) var(--mint-strong) var(--mint-line); color: var(--ink); }
 
         /* 정밀 가로폭 맞춤 순위표 스타일 */
-        #leaderboard-box { max-width: 320px; margin: 20px auto 0 auto; background: #bdbdbd; border: 3px solid; border-color: #fff #7b7b7b #7b7b7b #fff; padding: 10px; border-radius: 2px; text-align: left; box-sizing: border-box; }
-        #leaderboard-title { font-size: 0.95rem; font-weight: bold; color: #222; border-bottom: 2px solid #7b7b7b; padding-bottom: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        #leaderboard-box { max-width: 320px; margin: 20px auto 0 auto; background: var(--panel); border: 3px solid; border-color: var(--panel) var(--line-strong) var(--line-strong) var(--panel); padding: 10px; border-radius: 2px; text-align: left; box-sizing: border-box; }
+        #leaderboard-title { font-size: 0.95rem; font-weight: bold; color: var(--ink); border-bottom: 2px solid var(--line-strong); padding-bottom: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
 
-        .score-row { display: flex; align-items: center; font-family: monospace; font-size: 0.9rem; padding: 5px 0; color: #333; border-bottom: 1px dotted #999; }
+        .score-row { display: flex; align-items: center; font-family: monospace; font-size: 0.9rem; padding: 5px 0; color: var(--ink); border-bottom: 1px dotted var(--line-strong); }
         .score-row:last-child { border-bottom: none; }
 
-        .rank-col { width: 35px; font-weight: bold; color: #000080; }
+        .rank-col { width: 35px; font-weight: bold; color: var(--mint-strong); }
         .name-col { width: 90px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 5px; }
         .score-col { width: 55px; text-align: right; padding-right: 15px; }
-        .date-col { width: 75px; color: #555; text-align: right; font-size: 0.85rem; }
+        .date-col { width: 75px; color: var(--muted); text-align: right; font-size: 0.85rem; }
 
-        #clear-records-btn { font-size: 0.75rem; background: #bdbdbd; border: 2px solid; border-color: #fff #7b7b7b #7b7b7b #fff; cursor: pointer; padding: 2px 6px; font-weight: bold; outline: none; }
+        #clear-records-btn { font-size: 0.75rem; background: var(--surface); border: 2px solid; border-color: var(--panel) var(--line-strong) var(--line-strong) var(--panel); color: var(--ink); cursor: pointer; padding: 2px 6px; font-weight: bold; outline: none; }
     </style>
 </head>
 <body>
-    <div class="nav"><a href="index.html">9 스도쿠</a><a href="nonogram.html">▦ 노노그램</a></div>
-
     <!-- 난이도 선택 바 -->
     <div id="difficulty-box">
         <button class="diff-btn active" onclick="changeDifficulty('easy')">초급</button>
@@ -113,6 +131,7 @@
         <div id="score-list"></div>
     </div>
 
+    <script src="hub-frame.js"></script>
     <script src="score-api.js"></script>
     <script src="minesweeper.js"></script>
 </body>

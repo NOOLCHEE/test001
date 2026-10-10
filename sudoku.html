@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>숫자의 정원 | 스도쿠</title>
+	<link rel="stylesheet" href="reset.css">
+	<link rel="stylesheet" href="layout.css">
+	<link rel="stylesheet" href="main.css">
+</head>
+<body>
+	<main class="page">
+		<header class="topbar">
+			<div class="brand">
+				<div class="brand-mark" aria-hidden="true">9</div>
+				<div><p class="eyebrow">A QUIET MOMENT</p><h1>숫자의 정원</h1></div>
+			</div>
+			<div class="top-actions">
+				<button class="outline-button" id="newGame" type="button">↻ 새 게임</button>
+				<button class="icon-button" id="checkGame" type="button">✓ 확인하기</button>
+			</div>
+		</header>
+
+		<div class="layout">
+			<section class="game-panel" aria-label="스도쿠 게임">
+				<div class="game-head">
+					<div><h2>오늘의 퍼즐</h2><p>빈칸을 채워 아홉 개의 정원을 완성하세요.</p></div>
+					<label class="difficulty">난이도 <select id="difficulty"><option value="easy">느긋하게</option><option value="medium" selected>알맞게</option><option value="hard">깊게</option></select></label>
+				</div>
+				<div class="board-wrap"><div class="board" id="board" role="grid" aria-label="스도쿠 보드"></div></div>
+				<div class="status-row">
+					<div class="stats"><div class="stat"><span class="stat-label">시간</span><span class="stat-value" id="timer">00:00</span></div><div class="stat"><span class="stat-label">실수</span><span class="stat-value" id="mistakes">0 / 3</span></div></div>
+					<div class="message" id="message" aria-live="polite">칸을 선택하고 숫자를 눌러보세요.</div>
+				</div>
+			</section>
+
+			<aside class="side">
+				<section class="side-card"><h3>숫자 입력</h3><div class="number-pad" id="numberPad"></div><div class="tool-row"><button class="tool" id="noteMode" type="button">✎ 메모 모드</button><button class="tool" id="erase" type="button">⌫ 지우기</button></div></section>
+				<section class="side-card"><h3>작은 힌트</h3><div class="tip"><span class="tip-icon">i</span><span><strong>같은 숫자</strong>는 한 줄, 한 칸, 한 구역에 한 번만 나타나요.</span></div><button class="reset" id="hint" type="button">힌트 하나 받기 · 3회</button></section>
+				<section class="side-card ranking-card" aria-labelledby="rankingTitle">
+					<h3 id="rankingTitle">순위 기록</h3>
+					<p class="ranking-level" id="rankingLevel"></p>
+					<ol class="ranking-list" id="rankingList" aria-live="polite"></ol>
+					<p class="ranking-status" id="rankingStatus" aria-live="polite"></p>
+					<p class="ranking-note">완성 시간 기준 · 게임과 난이도별 상위 5위입니다.</p>
+				</section>
+			</aside>
+		</div>
+	</main>
+
+	<dialog class="record-dialog" id="recordDialog" aria-labelledby="recordTitle">
+		<form id="recordForm">
+			<h2 id="recordTitle">정원 완성!</h2>
+			<p>순위표에 표시할 이름을 입력해주세요.</p>
+			<label for="recordName">이름</label>
+			<input id="recordName" name="name" type="text" maxlength="20" autocomplete="off" required>
+			<div class="record-actions">
+				<button class="outline-button" id="skipRecord" type="button">이번에는 건너뛰기</button>
+				<button class="icon-button" type="submit">순위에 기록</button>
+			</div>
+		</form>
+	</dialog>
+
+	<script src="hub-frame.js" defer></script>
+	<script src="score-api.js" defer></script>
+	<script src="game.js" defer></script>
+</body>
+</html>

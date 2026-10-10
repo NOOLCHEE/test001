@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>스머프 화덕 베이커리</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="smurfy-theme.css">
+    <script defer src="hub-frame.js"></script>
+    <script defer src="score-api.js"></script>
+    <script defer src="config.js"></script>
+    <script defer src="smurfy.js"></script>
+</head>
+<body>
+    <main class="game-shell">
+
+    <div class="header-zone">
+        <div class="brand-copy">
+            <p class="eyebrow">A LITTLE BAKERY GAME</p>
+            <h1>스머프 베이커리</h1>
+        </div>
+        <div class="header-actions">
+            <button id="guide-open-btn" class="header-button guide-open-btn" type="button">📖 게임 안내</button>
+            <button id="main-reset-btn" class="icon-button" type="button" aria-label="게임 초기화" title="게임 초기화">↻</button>
+        </div>
+    </div>
+    <p class="desc">빵을 제때 꺼내 점수를 쌓고, 다섯 종류를 모아 시간을 더 얻으세요.</p>
+
+    <div class="game-layout">
+    <div id="game-container">
+        <!-- 난이도 셀렉터 -->
+        <div id="mode-selection" class="mode-zone">
+            <span class="mode-title">화덕 수</span>
+            <div class="mode-buttons">
+                <button class="mode-btn" data-ovens="4">4개 · 여유롭게</button>
+                <button class="mode-btn active" data-ovens="6">6개 · 기본</button>
+                <button class="mode-btn" data-ovens="8">8개 · 도전</button>
+            </div>
+        </div>
+
+        <!-- 상단 대시보드 -->
+        <div class="dashboard">
+            <div class="info-box score-board"><span class="info-label">점수</span><strong><span id="score">0</span><span class="info-unit">점</span></strong></div>
+            <div class="info-box timer-board" id="timer-box"><span class="info-label">남은 시간</span><strong><span id="time-left">30.0</span><span class="info-unit">초</span></strong></div>
+        </div>
+
+        <!-- 콤팩트 실시간 스머피 현황판 & 보너스 버튼 -->
+        <div class="counter-panel-zone">
+            <div id="live-counter-line" class="live-counter" aria-label="빵별 보너스 수량">
+                <span>🍞 <span id="live-count-식빵">0</span></span>
+                <span>🥖 <span id="live-count-바게트">0</span></span>
+                <span>🥐 <span id="live-count-크로와상">0</span></span>
+                <span>🥨 <span id="live-count-프레첼">0</span></span>
+                <span>🥯 <span id="live-count-도넛">0</span></span>
+            </div>
+            <button id="time-bonus-btn" class="bonus-button" type="button" disabled>+5초 <span aria-hidden="true">⚡</span></button>
+        </div>
+
+        <!-- 실시간 시간 비주얼 게이지 바 -->
+        <div id="progress-container">
+            <div id="progress-bar"></div>
+        </div>
+        
+        <!-- 화덕 그리드 -->
+        <div class="bakery-grid" id="bakery-grid"></div>
+
+        <!-- 게임 오버 / 리더보드 레이어 -->
+        <div id="game-over">
+            <h2>한 판 끝!</h2>
+            <p>최종 점수 <strong><span id="final-score">0</span>점</strong></p>
+            <button id="retry-btn" type="button">다시 굽기</button>
+        </div>
+
+        <!-- 빵별 굽기 타이밍 안내 -->
+        <div id="guide-modal">
+            <div class="modal-content">
+                <h3>빵 굽기 타이밍</h3>
+                <p class="modal-sub">게이지가 찬 뒤 알맞은 순간에 화덕을 눌러주세요.</p>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>메뉴</th>
+                                <th>굽기</th>
+                                <th>GOOD 👍</th>
+                                <th>SMURFY! ✨</th>
+                                <th>GOOD 👍</th>
+                                <th>태움 💥</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="b-name">🥐 크로와상</td>
+                                <td>3.0s</td>
+                                <td>0.0s~1.5s</td>
+                                <td class="highlight-td">1.5s~2.0s</td>
+                                <td>2.0s~3.0s</td>
+                                <td>3.0s~</td>
+                            </tr>
+                            <tr>
+                                <td class="b-name">🥨 프레첼</td>
+                                <td>4.0s</td>
+                                <td>0.0s~1.5s</td>
+                                <td class="highlight-td">1.5s~2.0s</td>
+                                <td>2.0s~3.0s</td>
+                                <td>3.0s~</td>
+                            </tr>
+                            <tr>
+                                <td class="b-name">🍞 식빵</td>
+                                <td>5.0s</td>
+                                <td>0.0s~1.5s</td>
+                                <td class="highlight-td">1.5s~2.0s</td>
+                                <td>2.0s~3.0s</td>
+                                <td>3.0s~</td>
+                            </tr>
+                            <tr>
+                                <td class="b-name">🥯 도넛</td>
+                                <td>6.0s</td>
+                                <td>0.0s~1.5s</td>
+                                <td class="highlight-td">1.5s~2.0s</td>
+                                <td>2.0s~3.0s</td>
+                                <td>3.0s~</td>
+                            </tr>
+                            <tr>
+                                <td class="b-name">🥖 바게트</td>
+                                <td>7.0s</td>
+                                <td>0.0s~1.5s</td>
+                                <td class="highlight-td">1.5s~2.0s</td>
+                                <td>2.0s~3.0s</td>
+                                <td>3.0s~</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <button id="guide-close-btn" type="button">안내 닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <aside class="ranking-panel" aria-labelledby="rankingTitle">
+        <header class="ranking-panel-heading">
+            <div>
+                <p class="eyebrow">BAKERY RECORDS</p>
+                <h2 id="rankingTitle">최고 점수</h2>
+            </div>
+            <span class="ranking-trophy" aria-hidden="true">🏆</span>
+        </header>
+        <p class="ranking-level" id="ranking-level" aria-live="polite"></p>
+        <ol class="ranking-list" id="ranking-list" aria-live="polite"></ol>
+    </aside>
+    </div>
+    </main>
+</body>
+</html>

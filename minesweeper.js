@@ -16,6 +16,9 @@ let remainingMines = CONFIG.easy.mines;
 // 🛠️ 모바일 전용 제어 상태 변수 추가
 let mobileToolMode = 'reveal'; // 'reveal'(열기) 또는 'flag'(깃발)
 let selectedCellForClear = null; // 원터치 주변 열기 타겟 저장용
+let lastNumberTap = null;
+let lastTouchEndAt = 0;
+const DOUBLE_TAP_DELAY = 350;
 let rankingRequestId = 0;
 
 function scoreDifficulty(level = currentLevel) {
@@ -42,6 +45,8 @@ function initGame() {
     // 모바일 보조 상태 초기화
     mobileToolMode = 'reveal';
     selectedCellForClear = null;
+    lastNumberTap = null;
+    lastTouchEndAt = 0;
     const toggleBtn = document.getElementById('tool-toggle-btn');
     if(toggleBtn) {
         toggleBtn.classList.add('active-mode');
@@ -50,7 +55,7 @@ function initGame() {
     const quickBtn = document.getElementById('quick-clear-btn');
     if(quickBtn) {
         quickBtn.disabled = true;
-        quickBtn.style.background = '#bdbdbd';
+        quickBtn.style.background = 'var(--line)';
     }
 
     const cfg = CONFIG[currentLevel];
@@ -82,17 +87,24 @@ function initGame() {
             cellEl.dataset.r = r;
             cellEl.dataset.c = c;
 
-            // 🛠️ 모바일 원터치 버튼 제어 최적화를 위해 터치 엔드 로직 튜닝
+            // Mobile double-taps on revealed numbers chord the surrounding cells.
             cellEl.addEventListener('touchend', (e) => {
                 if (gameOver) return;
+                const tappedAt = Date.now();
+                lastTouchEndAt = tappedAt;
 
-                // 이미 열린 칸이고 숫자가 있다면 '주변 열기' 대상 셀로 하이라이트 선택 지정
                 if (board[r][c].revealed && board[r][c].count > 0) {
                     selectCellForQuickClear(r, c);
+                    const isDoubleTap = lastNumberTap
+                        && lastNumberTap.r === r
+                        && lastNumberTap.c === c
+                        && tappedAt - lastNumberTap.time <= DOUBLE_TAP_DELAY;
+                    lastNumberTap = isDoubleTap ? null : { r, c, time: tappedAt };
+                    if (isDoubleTap) triggerMobileQuickClear();
                     return;
                 }
 
-                // 닫힌 칸인 경우 현재 선택된 버튼 모드에 맞춰 즉시 수행 (0.4초 안 기다려도 됨)
+                lastNumberTap = null;
                 if (!board[r][c].revealed) {
                     if (mobileToolMode === 'flag') {
                         toggleFlag(r, c);
@@ -115,10 +127,16 @@ function initGame() {
             });
 
             cellEl.addEventListener('click', (e) => {
-                if (e.pointerType === 'touch') return;
+                if (e.pointerType === 'touch' || Date.now() - lastTouchEndAt < 700) return;
                 if (!board[r][c].revealed) {
                     revealCell(r, c);
-                } else if (board[r][c].count > 0) {
+                }
+            });
+
+            cellEl.addEventListener('dblclick', (e) => {
+                e.preventDefault();
+                if (gameOver || Date.now() - lastTouchEndAt < 700) return;
+                if (board[r][c].revealed && board[r][c].count > 0) {
                     revealNeighbors(r, c);
                 }
             });
@@ -140,11 +158,11 @@ function toggleMobileTool() {
     if (mobileToolMode === 'reveal') {
         mobileToolMode = 'flag';
         btn.innerText = '🚩 깃발 모드';
-        btn.style.color = '#c62828';
+        btn.style.color = 'var(--coral)';
     } else {
         mobileToolMode = 'reveal';
         btn.innerText = '🔍 열기 모드';
-        btn.style.color = '#01579b';
+        btn.style.color = 'var(--ink)';
     }
 }
 // 🛠️ [모바일 전용] 원터치 주변 열기를 위해 타겟 숫자를 노랗게 활성화하는 보조 함수
@@ -159,8 +177,8 @@ function selectCellForQuickClear(r, c) {
     // ⚡ 주변 열기 버튼 활성화 상태로 전환
     const quickBtn = document.getElementById('quick-clear-btn');
     quickBtn.disabled = false;
-    quickBtn.style.background = '#81c784';
-    quickBtn.style.color = '#1b5e20';
+    quickBtn.style.background = 'var(--mint)';
+    quickBtn.style.color = 'var(--ink)';
 }
 
 // 🛠️ [모바일 전용] ⚡ 주변 열기 버튼을 실제로 눌렀을 때 발동하는 링크 함수
@@ -173,11 +191,12 @@ function triggerMobileQuickClear() {
     // 실행 후 하이라이트 및 단축 버튼 비활성화 초기화
     document.querySelectorAll('.cell').forEach(el => el.classList.remove('selected-cell'));
     selectedCellForClear = null;
+    lastNumberTap = null;
 
     const quickBtn = document.getElementById('quick-clear-btn');
     quickBtn.disabled = true;
-    quickBtn.style.background = '#bdbdbd';
-    quickBtn.style.color = '#333';
+    quickBtn.style.background = 'var(--line)';
+    quickBtn.style.color = 'var(--ink)';
 }
 
 function generateMines(startR, startC) {
@@ -239,11 +258,11 @@ function revealCell(r, c) {
     const cellEl = document.querySelector(`[data-r='${r}'][data-c='${c}']`);
     board[r][c].revealed = true;
     cellEl.classList.add('revealed');
-    cellEl.style.border = '1px solid #7b7b7b';
+    cellEl.style.border = '1px solid var(--line-strong)';
 
     if (board[r][c].isMine) {
         cellEl.classList.add('mine');
-        cellEl.style.backgroundColor = '#ff4d4d';
+        cellEl.style.backgroundColor = 'var(--coral)';
         cellEl.innerText = '💣';
         endGame(false);
         return;
@@ -297,10 +316,11 @@ function toggleFlag(r, c) {
     board[r][c].flag = !board[r][c].flag;
     if (board[r][c].flag) {
         cellEl.innerText = '🚩';
-        cellEl.style.color = '#ff0000';
+        cellEl.style.color = 'var(--coral)';
         remainingMines--;
     } else {
         cellEl.innerText = '';
+        cellEl.style.color = '';
         remainingMines++;
     }
     updateMineCounter();
@@ -392,7 +412,7 @@ async function renderLeaderboard() {
                 const item = document.createElement('span');
                 item.className = classes[index];
                 item.textContent = value;
-                if (!record) item.style.color = '#7b7b7b';
+                if (!record) item.style.color = 'var(--muted)';
                 row.appendChild(item);
             });
             listEl.appendChild(row);
